@@ -5,10 +5,8 @@
                                       "ghijklmnopqrstuvwxyz0123456789+/")))
 (define TOKEN_LENGTH  3)
 
-(define (string-ref->ASCII str k)
-  (char->integer (string-ref str k)))
-(define (int->base64-char i)
-  (string-ref BASE_64_CHARS (logand i 63)))
+(define (int->base64-byte i)
+  (bytevector-u8-ref BASE_64_CHARS (logand i 63)))
 
 (define (base64-encode bvToEncode)
   (define padCount       (modulo
@@ -21,41 +19,30 @@
   (define bvToListPadded (append
                            (bytevector->u8-list bvToEncode)
                            (make-list padCount (char->integer #\nul))))
-  (define final (fold
-                  (lambda (index encodedString)
-                    (define result (string-append
-                                     encodedString
-                                     (if (and
-                                           (> index 0)
-                                           (= (modulo
-                                                (* (/ index TOKEN_LENGTH) 4)
-                                                76) 0))
-                                         "\r\n"
-                                       "")))
-                    (define n      (+
-                                     (ash (string-ref->ASCII
-                                            paddedString
-                                            index)            16)
-                                     (ash (string-ref->ASCII
-                                            paddedString
-                                            (1+ index))        8)
-                                     (string-ref->ASCII
-                                       paddedString
-                                       (+ index 2))))
+  (define final
+    (fold
+      (lambda (index encodedList)
+        (define result (if (and
+                             (> index 0)
+                             (= (modulo (* (/ index TOKEN_LENGTH) 4) 76) 0))
+                           (cons                ; \n
+                             (char->integer #\return) ; \r
+                             (cons (char->integer #\newline) encodedList))
+                         encodedList))
+        (define n      (+
+                         (ash (list-ref bvToListPadded      index) 16)
+                         (ash (list-ref bvToListPadded (1+ index))  8)
+                         (list-ref bvToListPadded (+ index 2))))
 
-                    (string-append
-                      result
-                      (list->string (list
-                                      (int->base64-char (ash n -18))
-                                      (int->base64-char (ash n -12))
-                                      (int->base64-char (ash n -6))
-                                      (int->base64-char n)))))
-                  ""
-                  (iota
-                    (ceiling (/ (string-length paddedString) TOKEN_LENGTH))
-                    0
-                    TOKEN_LENGTH)))
+        (append
+          (list (int->base64-byte n)           (int->base64-byte (ash n -6))
+                (int->base64-byte (ash n -12)) (int->base64-byte (ash n -18)))
+          result))
+      '()
+      (iota (ceiling (/ (length bvToListPadded) TOKEN_LENGTH)) 0 TOKEN_LENGTH)))
 
-  (string-append
-    (substring final 0 (- (string-length final) (string-length equalsPadding)))
-    equalsPadding))
+  (utf8->string (list->u8vector (reverse final)))
+  ;; (string-append
+  ;;   (substring final 0 (- (string-length final) (string-length equalsPadding)))
+  ;;   equalsPadding)
+  )
