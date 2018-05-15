@@ -2,24 +2,25 @@
 
 (define BASE_64_CHARS (string->utf8 (string-append
                                       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
-                                      "ghijklmnopqrstuvwxyz0123456789+/"))
+                                      "ghijklmnopqrstuvwxyz0123456789+/")))
 (define TOKEN_LENGTH  3)
+
 (define (string-ref->ASCII str k)
   (char->integer (string-ref str k)))
 (define (int->base64-char i)
   (string-ref BASE_64_CHARS (logand i 63)))
 
 (define (base64-encode bvToEncode)
-  (define padCount      (modulo
-                          (- TOKEN_LENGTH (modulo
-                                            (bytevector-length bvToEncode)
-                                            TOKEN_LENGTH))
-                          TOKEN_LENGTH))
+  (define padCount       (modulo
+                           (- TOKEN_LENGTH (modulo
+                                             (bytevector-length bvToEncode)
+                                             TOKEN_LENGTH))
+                           TOKEN_LENGTH))
 
-  (define equalsPadding (make-bytevector padCount (char->integer #\=)))
-  (define paddedString  (string-append
-                          stringToEncode
-                          (make-string padCount #\nul)))
+  (define equalsPadding  (make-bytevector padCount (char->integer #\=)))
+  (define bvToListPadded (append
+                           (bytevector->u8-list bvToEncode)
+                           (make-list padCount (char->integer #\nul))))
   (define final (fold
                   (lambda (index encodedString)
                     (define result (string-append
@@ -56,5 +57,5 @@
                     TOKEN_LENGTH)))
 
   (string-append
-    (substring final 0 (- (string-length final) (string-length paddingString)))
-    paddingString))
+    (substring final 0 (- (string-length final) (string-length equalsPadding)))
+    equalsPadding))
