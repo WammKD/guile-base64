@@ -15,7 +15,7 @@
                                              TOKEN_LENGTH))
                            TOKEN_LENGTH))
 
-  (define equalsPadding  (make-bytevector padCount (char->integer #\=)))
+  (define equalsPadding  (make-list padCount (char->integer #\=)))
   (define bvToListPadded (append
                            (bytevector->u8-list bvToEncode)
                            (make-list padCount (char->integer #\nul))))
@@ -41,8 +41,6 @@
       '()
       (iota (ceiling (/ (length bvToListPadded) TOKEN_LENGTH)) 0 TOKEN_LENGTH)))
 
-  (utf8->string (list->u8vector (reverse final)))
-  ;; (string-append
-  ;;   (substring final 0 (- (string-length final) (string-length equalsPadding)))
-  ;;   equalsPadding)
-  )
+  (utf8->string (list->u8vector (reverse (append
+                                           equalsPadding
+                                           (drop final (length equalsPadding)))))))
