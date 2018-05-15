@@ -16,7 +16,7 @@
                                             TOKEN_LENGTH))
                           TOKEN_LENGTH))
 
-  (define paddingString (make-string padCount #\=))
+  (define equalsPadding (make-bytevector padCount (char->integer #\=)))
   (define paddedString  (string-append
                           stringToEncode
                           (make-string padCount #\nul)))
