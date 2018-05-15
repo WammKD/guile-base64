@@ -1,18 +1,18 @@
 (use-modules (rnrs bytevectors) (srfi srfi-1))
 
-(define BASE_64_CHARS (string-append
-                        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
-                        "ghijklmnopqrstuvwxyz0123456789+/"))
+(define BASE_64_CHARS (string->utf8 (string-append
+                                      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
+                                      "ghijklmnopqrstuvwxyz0123456789+/"))
 (define TOKEN_LENGTH  3)
 (define (string-ref->ASCII str k)
   (char->integer (string-ref str k)))
 (define (int->base64-char i)
   (string-ref BASE_64_CHARS (logand i 63)))
 
-(define (base64-encode stringToEncode)
+(define (base64-encode bvToEncode)
   (define padCount      (modulo
                           (- TOKEN_LENGTH (modulo
-                                            (string-length stringToEncode)
+                                            (bytevector-length bvToEncode)
                                             TOKEN_LENGTH))
                           TOKEN_LENGTH))
 
