@@ -19,6 +19,7 @@
   (define bvToListPadded (append
                            (bytevector->u8-list bvToEncode)
                            (make-list padCount (char->integer #\nul))))
+
   (define final
     (fold
       (lambda (index encodedList)
@@ -26,7 +27,7 @@
                              (> index 0)
                              (= (modulo (* (/ index TOKEN_LENGTH) 4) 76) 0))
                            (cons                ; \n
-                             (char->integer #\return) ; \r
+                             (char->integer #\return)  ; \r
                              (cons (char->integer #\newline) encodedList))
                          encodedList))
         (define n      (+
