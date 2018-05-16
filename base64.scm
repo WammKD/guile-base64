@@ -8,6 +8,11 @@
 
 (define (int->base64-byte i)
   (list-ref BASE_64_CHARS (logand i 63)))
+(define (base64-char-ref->int str i)
+  (list-index (lambda (int)
+                (= int (char->integer (string-ref str i)))) BASE_64_CHARS))
+(define (&255 i)
+  (logand i 255))
 
 
 
@@ -53,7 +58,9 @@
 
 (define (base64-decode stringToDecode)
   (define stripped (string-filter
-                     (lambda (char) (member (char->integer char) BASE_64_CHARS))
+                     (lambda (char) (member
+                                      (char->integer char)
+                                      (cons (char->integer #\=) BASE_64_CHARS)))
                      stringToDecode))
   (define stripLen (string-length stripped))
   (define padding  (if (char=? (string-ref stripped (1- stripLen)) #\=)
@@ -64,4 +71,20 @@
   (define updated  (string-append
                      (substring stripped 0 (- stripLen (string-length padding)))
                      padding))
-  )
+
+  (define final
+    (fold
+      (lambda (index decodedList)
+        (define n (+
+                    (ash (base64-char-ref->int updated       index) 18)
+                    (ash (base64-char-ref->int updated (1+  index)) 12)
+                    (ash (base64-char-ref->int updated (+ index 2))  6)
+                    (base64-char-ref->int updated (+ index 3))))
+
+        (append
+          (list (&255 n) (&255 (ash n -8)) (&255 (ash n -16)))
+          decodedList))
+      '()
+      (iota (ceiling (/ (string-length updated) 4)) 0 4)))
+
+  (list->u8vector (reverse (drop final (string-length padding)))))
