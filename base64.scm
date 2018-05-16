@@ -68,23 +68,27 @@
                            "AA"
                          "A")
                      ""))
+  (define pLength  (string-length padding))
   (define updated  (string-append
-                     (substring stripped 0 (- stripLen (string-length padding)))
+                     (substring stripped 0 (- stripLen pLength))
                      padding))
+  (define uLength  (string-length updated))
+  (define rLength  (- (* (ceiling (/ uLength 4)) TOKEN_LENGTH) pLength))
+  (define result   (make-bytevector rLength))
 
-  (define final
-    (fold
-      (lambda (index decodedList)
-        (define n (+
-                    (ash (base64-char-ref->int updated       index) 18)
-                    (ash (base64-char-ref->int updated (1+  index)) 12)
-                    (ash (base64-char-ref->int updated (+ index 2))  6)
-                    (base64-char-ref->int updated (+ index 3))))
+  (do ([increment 0 (+ increment            4)]
+       [index     0 (+ index     TOKEN_LENGTH)])
+      [(= increment uLength)]
+    (let ([n (+
+               (ash (base64-char-ref->int updated       increment) 18)
+               (ash (base64-char-ref->int updated (1+  increment)) 12)
+               (ash (base64-char-ref->int updated (+ increment 2))  6)
+               (base64-char-ref->int updated (+ increment 3)))])
+      (for-each
+        (lambda (i)
+          (let ([newI (+ index (- 2 i))])
+            (when (< newI rLength)
+              (bytevector-u8-set! result newI (&255 (ash n (* i -8)))))))
+        (list 0 1 2))))
 
-        (append
-          (list (&255 n) (&255 (ash n -8)) (&255 (ash n -16)))
-          decodedList))
-      '()
-      (iota (ceiling (/ (string-length updated) 4)) 0 4)))
-
-  (list->u8vector (reverse (drop final (string-length padding)))))
+  result)
