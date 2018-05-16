@@ -1,12 +1,15 @@
 (use-modules (rnrs bytevectors) (srfi srfi-1))
 
-(define BASE_64_CHARS (string->utf8 (string-append
-                                      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
-                                      "ghijklmnopqrstuvwxyz0123456789+/")))
+(define BASE_64_CHARS (bytevector->u8-list
+                        (string->utf8 (string-append
+                                        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
+                                        "ghijklmnopqrstuvwxyz0123456789+/"))))
 (define TOKEN_LENGTH  3)
 
 (define (int->base64-byte i)
-  (bytevector-u8-ref BASE_64_CHARS (logand i 63)))
+  (list-ref BASE_64_CHARS (logand i 63)))
+
+
 
 (define (base64-encode bvToEncode)
   (define padCount       (modulo
@@ -45,3 +48,20 @@
   (utf8->string (list->u8vector (reverse (append
                                            equalsPadding
                                            (drop final (length equalsPadding)))))))
+
+
+
+(define (base64-decode stringToDecode)
+  (define stripped (string-filter
+                     (lambda (char) (member (char->integer char) BASE_64_CHARS))
+                     stringToDecode))
+  (define stripLen (string-length stripped))
+  (define padding  (if (char=? (string-ref stripped (1- stripLen)) #\=)
+                       (if (char=? (string-ref stripped (- stripLen 2)) #\=)
+                           "AA"
+                         "A")
+                     ""))
+  (define updated  (string-append
+                     (substring stripped 0 (- stripLen (string-length padding)))
+                     padding))
+  )
