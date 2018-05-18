@@ -6,13 +6,49 @@
                                         "ghijklmnopqrstuvwxyz0123456789+/"))))
 (define TOKEN_LENGTH  3)
 
-(define (int->base64-byte i)
-  (list-ref BASE_64_CHARS (logand i 63)))
+(define (int->base64-char i)
+  (integer->char (list-ref BASE_64_CHARS (logand i 63))))
 (define (base64-char-ref->int str i)
   (list-index (lambda (int)
                 (= int (char->integer (string-ref str i)))) BASE_64_CHARS))
 (define (&255 i)
   (logand i 255))
+(define (bytevector-map-m-to-l m l orig padLength)
+  (define   origLength ((if (= m 3) length      string-length)   orig))
+  (define resultLength (- (* (ceiling (/ origLength m)) l) padLength))
+  (define result       ((if (= m 3) make-string make-bytevector) resultLength))
+
+  (define    ref-fun   (if (= m 3) list-ref         base64-char-ref->int))
+  (define logand-fun   (if (= m 3) int->base64-char &255))
+  (define    set-fun!  (if (= m 3) string-set!      bytevector-u8-set!))
+
+  (define (invert j k) (- (1- k) j))
+
+  (do ([increment 0 (+ increment m)]
+       [index     0 (+ index     l)])
+      [(= increment origLength)]
+    (when (and (= m 3) (> index 0) (= (modulo (* (/ index 3) 4) 76) 0))
+      (set! result (string-append
+                     (substring result 0     index)
+                     "\r\n"
+                     (substring result index)))
+      (set! index  (+ index 2)))
+
+    (let ([n (fold
+               (lambda (i sum)
+                 (+ sum (ash
+                          (ref-fun orig         (+ increment i))
+                          (*       (invert i m) (* l         2)))))
+               0
+               (iota m))])
+      (for-each
+        (lambda (i)
+          (let ([newI (+ index (invert i l))])
+            (when (< newI resultLength)
+              (set-fun! result newI (logand-fun (ash n (* i (* m -2))))))))
+        (iota l))))
+
+  result)
 
 
 
@@ -22,37 +58,13 @@
                                              (bytevector-length bvToEncode)
                                              TOKEN_LENGTH))
                            TOKEN_LENGTH))
-
-  (define equalsPadding  (make-list padCount (char->integer #\=)))
   (define bvToListPadded (append
                            (bytevector->u8-list bvToEncode)
                            (make-list padCount (char->integer #\nul))))
 
-  (define final
-    (fold
-      (lambda (index encodedList)
-        (define result (if (and
-                             (> index 0)
-                             (= (modulo (* (/ index TOKEN_LENGTH) 4) 76) 0))
-                           (cons                ; \n
-                             (char->integer #\return)  ; \r
-                             (cons (char->integer #\newline) encodedList))
-                         encodedList))
-        (define n      (+
-                         (ash (list-ref bvToListPadded      index) 16)
-                         (ash (list-ref bvToListPadded (1+ index))  8)
-                         (list-ref bvToListPadded (+ index 2))))
-
-        (append
-          (list (int->base64-byte n)           (int->base64-byte (ash n -6))
-                (int->base64-byte (ash n -12)) (int->base64-byte (ash n -18)))
-          result))
-      '()
-      (iota (ceiling (/ (length bvToListPadded) TOKEN_LENGTH)) 0 TOKEN_LENGTH)))
-
-  (utf8->string (list->u8vector (reverse (append
-                                           equalsPadding
-                                           (drop final (length equalsPadding)))))))
+  (string-append
+    (bytevector-map-m-to-l 3 4 bvToListPadded padCount)
+    (make-string padCount #\=)))
 
 
 
