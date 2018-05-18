@@ -32,7 +32,8 @@
                      (substring result 0     index)
                      "\r\n"
                      (substring result index)))
-      (set! index  (+ index 2)))
+      (set! index         (+ index        2))
+      (set! resultLength  (+ resultLength 2)))
 
     (let ([n (fold
                (lambda (i sum)
