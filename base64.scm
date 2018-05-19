@@ -1,4 +1,7 @@
-(use-modules (rnrs bytevectors) (srfi srfi-1))
+(define-module (encode base64)
+  #:use-module (rnrs bytevectors)
+  #:autoload   (srfi srfi-1) (fold)
+  #:export     (base64-encode base64-decode))
 
 (define BASE_64_CHARS (bytevector->u8-list
                         (string->utf8 (string-append
