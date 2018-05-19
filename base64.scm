@@ -4,7 +4,6 @@
                         (string->utf8 (string-append
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
                                         "ghijklmnopqrstuvwxyz0123456789+/"))))
-(define TOKEN_LENGTH  3)
 
 
 (define (bytevector-map-m-to-l m l orig padLength)
@@ -55,10 +54,8 @@
 
 (define (base64-encode bvToEncode)
   (define padCount       (modulo
-                           (- TOKEN_LENGTH (modulo
-                                             (bytevector-length bvToEncode)
-                                             TOKEN_LENGTH))
-                           TOKEN_LENGTH))
+                           (- 3 (modulo (bytevector-length bvToEncode) 3))
+                           3))
   (define bvToListPadded (append
                            (bytevector->u8-list bvToEncode)
                            (make-list padCount (char->integer #\nul))))
