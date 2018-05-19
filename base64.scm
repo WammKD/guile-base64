@@ -77,7 +77,9 @@
                      stringToDecode))
   (define stripLen (string-length stripped))
 
-  (define padding  (if (char=? (string-ref stripped (1- stripLen))  #\=)
+  (define padding  (if (and
+                         (> stripLen 0)
+                         (char=? (string-ref stripped (1- stripLen))  #\=))
                        (if (char=? (string-ref stripped (- stripLen 2)) #\=)
                            "AA"
                          "A")
