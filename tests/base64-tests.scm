@@ -62,3 +62,30 @@
                              "\r\nNTY3ODkhQCMwXiYqKCk7Ojw+LC4gW117fQ=="))))
 
 (test-end "Decode")
+
+
+
+(test-begin "End to End")
+
+(test-assert
+    "Nul Character"
+  (string=? "\x00"   (decode-string->string (string->bv-and-encode "\x00"))))
+(test-assert
+    "abcd"
+  (string=? "abcd"   (decode-string->string (string->bv-and-encode "abcd"))))
+(test-assert
+    "abcde"
+  (string=? "abcde"  (decode-string->string (string->bv-and-encode "abcde"))))
+(test-assert
+    "abcdef"
+  (string=? "abcdef" (decode-string->string (string->bv-and-encode "abcdef"))))
+(test-assert
+    "Truth"
+  (bytevector=?
+    #vu8(68 97 110 105 32 105 115 32 67  117 116 101 226 132 162
+         32 97 110 100 32 65  109 97 122 105 110 103 226 132 162 46)
+    (base64-decode (base64-encode #vu8(68  97  110 105 32  105 115 32  67  117
+                                       116 101 226 132 162 32  97  110 100 32
+                                       65  109 97  122 105 110 103 226 132 162 46)))))
+
+(test-end "End to End")
