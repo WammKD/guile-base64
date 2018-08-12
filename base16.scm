@@ -4,16 +4,12 @@
   #:export     (base16-encode base16-decode))
 
 (define (base16-encode bvToEncode)
-  (define (get-base-10 m)
-    (let helper ([l m] [start 1])
-      (if (< l start) start (helper l (* start 10)))))
-
   (fold
     (lambda (num final)
       (string-append
         final
-        (let help ([p num] [return ""])
-          (define division  (/ p 16.0))
+        (let helper ([n num] [return ""])
+          (define division  (/ n 16.0))
           (define result    (floor division))
           (define newReturn (string-append
                               (let ([remainder (inexact->exact
@@ -25,6 +21,32 @@
                                                                 remainder)]))
                               return))
 
-          (if (zero? result) newReturn (help result newReturn)))))
+          (if (zero? result) newReturn (helper result newReturn)))))
     ""
     (bytevector->u8-list bvToEncode)))
+
+(define (base16-decode stringToDecode)
+  (define (convertBase16 s)
+    (case (car (char-set->list (string->char-set s)))
+      [(#\A) 10] [(#\B) 11] [(#\C) 12]
+      [(#\D) 13] [(#\E) 14] [(#\F) 15] [else (string->number s)]))
+
+  (define stringLengthHalved (/ (string-length stringToDecode) 2))
+
+  (if (not (integer? stringLengthHalved))
+      (error "The given String is not Base16 encoded.")
+    (let ([bvToReturn (make-bytevector stringLengthHalved)])
+      (for-each
+        (lambda (index)
+          (bytevector-u8-set!
+            bvToReturn
+            (/ (- index 2) 2)
+            (+
+              (* (convertBase16
+                   (string-upcase
+                     (substring stringToDecode (- index 2) (1- index)))) 16)
+              (convertBase16
+                (string-upcase (substring stringToDecode (1- index) index))))))
+        (iota stringLengthHalved 2 2))
+
+      bvToReturn)))
