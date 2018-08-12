@@ -21,7 +21,11 @@
                                                                 remainder)]))
                               return))
 
-          (if (zero? result) newReturn (helper result newReturn)))))
+          (if (zero? result)
+              (string-append
+                (if (= (string-length newReturn) 1) "0" "")
+                newReturn)
+            (helper result newReturn)))))
     ""
     (bytevector->u8-list bvToEncode)))
 
